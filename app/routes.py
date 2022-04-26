@@ -32,3 +32,22 @@ def handle_planets():
             "distance_mil_miles": planet.distance_mil_miles
         })
     return jsonify(planets_response)
+
+@planets_bp.route("/<planet_id>", methods=["GET"])
+def individual_planet(planet_id):
+    try:
+        planet_int = int(planet_id)
+    except:
+        return jsonify("Please enter a valid ID"), 400
+    individual_planet = None
+    for planet in planets:
+        if planet.id == planet_int:
+            individual_planet = {
+            "id": planet.id,
+            "name": planet.name,
+            "description": planet.description,
+            "distance_mil_miles": planet.distance_mil_miles
+            }
+            return jsonify(individual_planet), 200
+    if individual_planet == None:
+        return jsonify("That is not a valid planet"), 404
