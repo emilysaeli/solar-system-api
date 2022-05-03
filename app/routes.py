@@ -1,6 +1,6 @@
 from app import db
 from app.models.planets import Planet
-from flask import Blueprint, jsonify, make_response, request
+from flask import Blueprint, jsonify, make_response, request, abort
 
 # class Planet:
 #     def __init__(self, id, name, description, distance_mil_miles):
@@ -19,6 +19,15 @@ from flask import Blueprint, jsonify, make_response, request
 #     Planet(7, "Uranus", "Hold the jokes please", 1183.14),
 # ]
 
+def validate_planet(planet_id):
+    try:
+        planet_int = int(planet_id)
+    except:
+        abort(make_response({"message":f"planet {planet_id} invalid"}, 400))
+    planet = Planet.query.get(planet_id)
+    if not planet:
+        abort(make_response({"message":f"planet {planet_id} not found"}, 404))
+    return planet
 
 planets_bp = Blueprint("planets", __name__, url_prefix="/planets")
 @planets_bp.route("", methods=["POST"])
@@ -45,21 +54,37 @@ def handle_planets():
         })
     return jsonify(planets_response)
 
-# @planets_bp.route("/<planet_id>", methods=["GET"])
-# def individual_planet(planet_id):
-#     try:
-#         planet_int = int(planet_id)
-#     except:
-#         return jsonify("Please enter a valid ID"), 400
-#     individual_planet = None
-#     for planet in planets:
-#         if planet.id == planet_int:
-#             individual_planet = {
-#             "id": planet.id,
-#             "name": planet.name,
-#             "description": planet.description,
-#             "distance_mil_miles": planet.distance_mil_miles
-#             }
-#             return jsonify(individual_planet), 200
-#     if individual_planet == None:
-#         return jsonify("That is not a valid planet"), 404
+@planets_bp.route("/<planet_id>", methods=["GET"])
+def individual_planet(planet_id):
+    planet = Planet.query.get(planet_id)
+    return {
+            "id": planet.id,
+            "planet_name": planet.planet_name,
+            "description": planet.description,
+            "distance_mil_miles": planet.distance_mil_miles
+        }
+
+
+@planets_bp.route("/<planet_id>", methods=["PUT"])
+def update_planet(planet_id):
+    planet = validate_planet(planet_id)
+
+    request_body = request.get_json()
+
+    planet.planet_name=request_body["planet_name"]
+    planet.description=request_body["description"]
+    planet.distance_mil_miles=request_body["distance_mil_miles"]
+
+    db.session.commit()
+    return make_response(f"Planet #{planet.id} successfully updated")
+
+
+
+@planets_bp.route("/<planet_id>", methods=["DELETE"])
+def delete_planet(planet_id):
+    planet = validate_planet(planet_id)
+
+    db.session.delete(planet)
+    db.session.commit()
+
+    return make_response(f"Planet #{planet.id} successfully deleted")
