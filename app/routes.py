@@ -43,8 +43,21 @@ def handle_planets_post():
 
 @planets_bp.route("", methods=["GET"])
 def handle_planets():
+    params = request.args
+    if "distance_mil_miles" in params and "planet_name" in params:
+        distance_mil_miles_value = params["distance_mil_miles"]
+        planet_name_value = params["planet_name"]
+        planets = Planet.query.filter_by(planet_name=planet_name_value, distance_mil_miles=distance_mil_miles_value)
+    elif "distance_mil_miles" in params:
+        distance_mil_miles_value = params["distance_mil_miles"]
+        planets = Planet.query.filter_by(distance_mil_miles=distance_mil_miles_value)
+    elif "planet_name" in params:
+        planet_name_value = params["planet_name"]
+        planets = Planet.query.filter_by(planet_name=planet_name_value)
+    else:
+        planets = Planet.query.all()
+        
     planets_response = []
-    planets = Planet.query.all()
     for planet in planets:
         planets_response.append({
             "id": planet.id,
@@ -53,6 +66,7 @@ def handle_planets():
             "distance_mil_miles": planet.distance_mil_miles
         })
     return jsonify(planets_response)
+    #something something use abort to refactor? get planet or abort from lesson
 
 @planets_bp.route("/<planet_id>", methods=["GET"])
 def individual_planet(planet_id):
@@ -65,6 +79,7 @@ def individual_planet(planet_id):
         }
 
 
+#can add 'PATCH' after 'PUT'? 
 @planets_bp.route("/<planet_id>", methods=["PUT"])
 def update_planet(planet_id):
     planet = validate_planet(planet_id)
